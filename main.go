@@ -6,7 +6,40 @@ import (
     "net/http"
     "log"
     "strings"
+    "sort"
 )
+
+var MetaDataMap = map[string]interface{}{
+    "ami-id"                : "ami-5cdummy",
+    "ami-launch-index"      : "0",
+    "ami-manifest-path"     : "(unknown)",
+    "block-device-mapping/" : "ami\nephemeral0\nroot",
+    "hostname"              : "ip-10-10-10-101.ap-dummy-1.compute.internal",
+    "instance-action"       : "none",
+    "instance-id"           : "i-ccdummyfu",
+    "instance-type"         : "t2.small",
+    "kernel-id"             : "aki-aadummy",
+    "local-hostname"        : "ip-10-10-10-101.ap-dummy-1.compute.internal",
+    "local-ipv4"            : "10.10.10.101",
+    "mac"                   : "12:31:FF:FF:FF:CC",
+    "metrics/"              : "",
+    "network/"              : "",
+    "placement/"            : "",
+    "profile"               : "default-paravirtual",
+    "public-hostname"       : "ec2-44-144-144-144.ap-dummy-1.compute.amazonaws.com",
+    "public-ipv4"           : "44.144.144.144",
+    "public-keys/"          : "",
+    "reservation-id"        : "r-8008135",
+    "security-groups"       : "sc-group-default",
+}
+
+// Keys to get `keys` of map and put it in array
+func Keys(m map[string]interface{}) (keys []string) {
+    for k := range m {
+        keys = append(keys, k)
+    }
+    return keys
+}
 
 // Index the metadata API root
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -22,37 +55,16 @@ func VersionRoot(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 // MetaDataRoot list whole meta-data keys
 func MetaDataRoot(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-    lines := []string{
-        "ami-id",
-        "ami-launch-index",
-        "ami-manifest-path",
-        "block-device-mapping/",
-        "hostname",
-        "instance-action",
-        "instance-id",
-        "instance-type",
-        "kernel-id",
-        "local-hostname",
-        "local-ipv4",
-        "mac",
-        "metrics/",
-        "network/",
-        "placement/",
-        "profile",
-        "public-hostname",
-        "public-ipv4",
-        "public-keys/",
-        "reservation-id",
-        "security-groups",
-    }
+    lines := Keys(MetaDataMap)
+    sort.Strings(lines)
     fmt.Fprint(w, strings.Join(lines, "\n"))
 }
 
 // MetaDataContent serve some meta-data values
 func MetaDataContent(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-    version := ps.ByName("version")
-    id := ps.ByName("id");
-    fmt.Fprintf(w, "hello, %s %s!\n", version, id)
+    id := ps.ByName("id")
+    value := MetaDataMap[id]
+    fmt.Fprintf(w, "%s\n", value)
 }
 
 // UserDataContent serve user-data file to simulate AWS user-data request
